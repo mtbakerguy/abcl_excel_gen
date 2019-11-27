@@ -80,10 +80,30 @@
     :accessor strikeout
     :documentation "Strikeout the text in a cell")
    (color
-  :initarg :color
+    :initarg :color
     :initform nil
     :accessor color
     :documentation "Color for a cell")
+   (bottom
+    :initarg :bottom
+    :initform nil
+    :accessor bottom
+    :documentation "Bottom border")
+   (top
+    :initarg :top
+    :initform nil
+    :accessor top
+    :documentation "Top border")
+   (left
+    :initarg :left
+    :initform nil
+    :accessor left
+    :documentation "Left border")
+   (right
+    :initarg :right
+    :initform nil
+    :accessor right
+    :documentation "Right border")
    (cell-value
     :initarg :cell-value
     :initform nil
@@ -101,6 +121,10 @@
     (if (slot-value cell 'bold) (java:jcall "setBold" font java:+true+))
     (if (slot-value cell 'italic) (java:jcall "setItalic" font java:+true+))
     (if (slot-value cell 'strikeout) (java:jcall "setStrikeout" font java:+true+))
+    (if (slot-value cell 'bottom) (java:jcall "setBorderBottom" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
+    (if (slot-value cell 'top) (java:jcall "setBorderTop" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
+    (if (slot-value cell 'left) (java:jcall "setBorderLeft" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
+    (if (slot-value cell 'right) (java:jcall "setBorderRight" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
     (if (slot-value cell 'color)
 	(java:jcall (java:jmethod "org.apache.poi.xssf.usermodel.XSSFFont" "setColor" (java:jclass "short"))
 		    font (lookup-color (slot-value cell 'color))))
@@ -108,7 +132,11 @@
 	    (slot-value cell 'color)
 	    (slot-value cell 'underline)
 	    (slot-value cell 'italic)
-	    (slot-value cell 'strikeout))
+	    (slot-value cell 'strikeout)
+	    (slot-value cell 'bottom)
+	    (slot-value cell 'top)
+	    (slot-value cell 'left)
+	    (slot-value cell 'right))
 	(progn
 	  (java:jcall "setFont" style font)
 	  (java:jcall "setCellStyle" cell-internal style)))))
