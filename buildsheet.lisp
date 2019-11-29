@@ -16,6 +16,13 @@
 (setf outfile (cadr ext::*command-line-argument-list*))
 (setf infile (caddr ext::*command-line-argument-list*))
 
+;; if the CLI doesn't set the variables -- check vars.lisp
+(if (eq poifile nil)
+    (handler-case (load "vars.lisp")
+      (file-error (c)
+	(declare (ignore c))
+	(format t "The vars.lisp file wasn't found :: variables not set"))))
+
 (defun init-classpath (&optional (poi-directory poifile))
   (let ((*default-pathname-defaults* poi-directory))
     (dolist (jar-pathname (or (directory "**/*.jar")
@@ -104,6 +111,11 @@
     :initform nil
     :accessor right
     :documentation "Right border")
+   (custom
+    :initarg :custom
+    :initform nil
+    :accessor custom
+    :documentation "A predefined cell with style and content")
    (cell-value
     :initarg :cell-value
     :initform nil
@@ -111,7 +123,7 @@
     :documentation "Text for the cell")))
 
 (defun lookup-color (color)
-    (java:jcall "getIndex" (cond ((eq color 'RED) (java:jfield "org.apache.poi.ss.usermodel.IndexedColors" "RED")))))
+  (java:jcall "getIndex" (java:jfield "org.apache.poi.ss.usermodel.IndexedColors" (string color))))
 
 (defun build-cell (workbook cell)
   (let* ((cell-internal (slot-value cell 'cell-internal))
@@ -175,4 +187,10 @@
 
 (init-classpath)
 (delete-file outfile)
+
+(handler-case (load "custom.lisp")
+  (file-error (c)
+    (declare (ignore c))
+    (format t "Did not load custom.lisp")))
+
 (worksheet outfile (read (open infile :if-does-not-exist nil)))
