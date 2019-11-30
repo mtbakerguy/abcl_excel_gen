@@ -12,12 +12,12 @@
 
 (in-package :export-tsv)
 
-(setf poifile (car ext::*command-line-argument-list*))
-(setf outfile (cadr ext::*command-line-argument-list*))
-(setf infile (caddr ext::*command-line-argument-list*))
+(setf *poifile* (car ext::*command-line-argument-list*))
+(setf *outfile* (cadr ext::*command-line-argument-list*))
+(setf *infile* (caddr ext::*command-line-argument-list*))
 
 ;; if the CLI doesn't set the variables -- check vars.lisp
-(if (eq poifile nil)
+(if (eq *poifile* nil)
     (handler-case (load "vars.lisp")
       (file-error (c)
 	(declare (ignore c))
@@ -30,7 +30,7 @@
     (declare (ignore c))
     (format t "Did not load custom.lisp")))
 
-(defun init-classpath (&optional (poi-directory poifile))
+(defun init-classpath (&optional (poi-directory *poifile*))
   (let ((*default-pathname-defaults* poi-directory))
     (dolist (jar-pathname (or (directory "**/*.jar")
                               (error "no jars found in ~S - expected Apache POI binary ~
@@ -132,23 +132,37 @@
 (defun lookup-color (color)
   (java:jcall "getIndex" (java:jfield "org.apache.poi.ss.usermodel.IndexedColors" (string color))))
 
-(defun build-cell (workbook cell)
+
+(setf *cell-styles*
+      '((bold . (lambda (style font cell) (java:jcall "setBold" font java:+true+)))
+	(italic . (lambda (style font cell) (java:jcall "setItalic" font java:+true+)))
+	(strikeout . (lambda (style font cell) (java:jcall "setStrikeout" font java:+true+)))
+	(bottom . (lambda (style font cell) (java:jcall "setBorderBottom" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM"))))
+	(top . (lambda (style font cell) (java:jcall "setBorderTop" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM"))))
+	(left . (lambda (style font cell) (java:jcall "setBorderLeft" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM"))))
+	(right . (lambda (style font cell) (java:jcall "setBorderRight" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM"))))
+	(color . (lambda (style font cell) (java:jcall (java:jmethod "org.apache.poi.xssf.usermodel.XSSFFont" "setColor" (java:jclass "short")) font (lookup-color (slot-value cell 'color)))))))
+
+(defun do-style (style font cell style-name)
+  (if (slot-value cell style-name)
+      (funcall (cdr (assoc style-name *cell-styles*)) style font cell)))
+
+(defun build-cell (workbook rownum cell)
   (if (slot-value cell 'custom)
-      (build-cell workbook (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons (slot-value cell 'cell-internal) (cdr (assoc (slot-value cell 'custom) *custom-cells*))))))))
+      (build-cell workbook rownum (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons (slot-value cell 'cell-internal) (cdr (assoc (slot-value cell 'custom) *custom-cells*))))))))
       (let* ((cell-internal (slot-value cell 'cell-internal))
 	     (style (java:jcall "createCellStyle" workbook))
-	     (font (java:jcall "createFont" workbook)))
+	     (font (java:jcall "createFont" workbook))
+	     (style-fn (lambda (style-name) (do-style style font cell style-name))))
 	(java:jcall "setCellValue" cell-internal (slot-value cell 'cell-value))
-	(if (slot-value cell 'bold) (java:jcall "setBold" font java:+true+))
-	(if (slot-value cell 'italic) (java:jcall "setItalic" font java:+true+))
-	(if (slot-value cell 'strikeout) (java:jcall "setStrikeout" font java:+true+))
-	(if (slot-value cell 'bottom) (java:jcall "setBorderBottom" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
-	(if (slot-value cell 'top) (java:jcall "setBorderTop" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
-	(if (slot-value cell 'left) (java:jcall "setBorderLeft" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
-	(if (slot-value cell 'right) (java:jcall "setBorderRight" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM")))
-	(if (slot-value cell 'color)
-	    (java:jcall (java:jmethod "org.apache.poi.xssf.usermodel.XSSFFont" "setColor" (java:jclass "short"))
-			font (lookup-color (slot-value cell 'color))))
+	(funcall style-fn 'bold)
+	(funcall style-fn 'italic)
+	(funcall style-fn 'strikeout)
+	(funcall style-fn 'bottom)
+	(funcall style-fn 'top)
+	(funcall style-fn 'left)
+	(funcall style-fn 'right)
+	(funcall style-fn 'color)
 	(if (or (slot-value cell 'bold)
 		(slot-value cell 'color)
 		(slot-value cell 'underline)
@@ -172,7 +186,7 @@
 	      (cond ((stringp elt) (java:jcall "setCellValue" cell elt))
 		    ((numberp elt) (java:jcall "setCellValue" cell elt))
 		    ((listp elt)
-		     (if elt (build-cell workbook (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons cell elt)))))))))))
+		     (if elt (build-cell workbook rownum (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons cell elt)))))))))))
       (if (slot-value row-object 'hidden) (java:jcall "setZeroHeight" row-internal t)))))
 
 (defun build-sheet (workbook sheet-ctor)
@@ -195,5 +209,5 @@
       (java:jcall "close" file-output-stream))))
 
 (init-classpath)
-(delete-file outfile)
-(worksheet outfile (read (open infile :if-does-not-exist nil)))
+(delete-file *outfile*)
+(worksheet *outfile* (read (open *infile* :if-does-not-exist nil)))
