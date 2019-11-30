@@ -2,6 +2,8 @@
 	:rows '((:row-values '("name" "age"))
 		(:row-values '("mickey" 50))
 		(:row-values '("minnie" 48))
+                (:row-values  '((:custom 'goofy)))
+                (:row-values  '((:custom 'dopey)))
 		(:row-values '("goofy" 48 (:bold t :strikeout t :italic t :color 'red :cell-value "bogus")))
 		(:row-values '("goofy" 48 (:bold t :strikeout t :italic t :color 'orange :cell-value "bogus")))
 		(:row-values '("goofy" 48 (:bold t :strikeout t :italic t :color 'yellow :cell-value "bogus")))

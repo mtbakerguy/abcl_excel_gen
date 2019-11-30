@@ -24,7 +24,7 @@
 	(format t "The vars.lisp file wasn't found :: variables not set"))))
 
 ;; load custom template objects
-(setf custom-cells nil)
+(setf *custom-cells* nil)
 (handler-case (load "custom.lisp")
   (file-error (c)
     (declare (ignore c))
@@ -134,7 +134,7 @@
 
 (defun build-cell (workbook cell)
   (if (slot-value cell 'custom)
-      (build-cell workbook (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons (slot-value cell 'cell-internal) (cdr (assoc (slot-value cell 'custom) custom-cells))))))))
+      (build-cell workbook (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons (slot-value cell 'cell-internal) (cdr (assoc (slot-value cell 'custom) *custom-cells*))))))))
       (let* ((cell-internal (slot-value cell 'cell-internal))
 	     (style (java:jcall "createCellStyle" workbook))
 	     (font (java:jcall "createFont" workbook)))
