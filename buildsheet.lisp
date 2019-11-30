@@ -23,6 +23,13 @@
 	(declare (ignore c))
 	(format t "The vars.lisp file wasn't found :: variables not set"))))
 
+;; load custom template objects
+(setf custom-cells nil)
+(handler-case (load "custom.lisp")
+  (file-error (c)
+    (declare (ignore c))
+    (format t "Did not load custom.lisp")))
+
 (defun init-classpath (&optional (poi-directory poifile))
   (let ((*default-pathname-defaults* poi-directory))
     (dolist (jar-pathname (or (directory "**/*.jar")
@@ -69,7 +76,7 @@
   ((cell-internal
     :initarg :cell-internal
     :initform (error "Must supply an internal cell")
-    :accessor cell-ingernal
+    :accessor cell-internal
     :documentation "Java object return from createCell")
    (bold
     :initarg :bold
@@ -171,8 +178,8 @@
 	 (sheet-internal (java:jcall "createSheet" workbook (slot-value sheet 'name))))
     (setf (slot-value sheet 'sheet-internal) sheet-internal)
     (loop for row in (slot-value sheet 'rows)
-	 for rownum from 0
-    	 do (build-row workbook sheet row rownum))
+       for rownum from 0
+       do (build-row workbook sheet row rownum))
     sheet))
 
 (defun worksheet (filename sheets)
@@ -187,10 +194,4 @@
 
 (init-classpath)
 (delete-file outfile)
-
-(handler-case (load "custom.lisp")
-  (file-error (c)
-    (declare (ignore c))
-    (format t "Did not load custom.lisp")))
-
 (worksheet outfile (read (open infile :if-does-not-exist nil)))
