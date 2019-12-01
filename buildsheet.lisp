@@ -149,6 +149,9 @@
 (defun column-to-excel (column)
   (concatenate 'string (flatten (column-to-excel-convert column))))
 
+(defun excel-identifier (column row)
+  (concatenate 'string (column-to-excel column) (write-to-string (+ row 1))))
+
 (defun lookup-color (color)
   (java:jcall "getIndex" (java:jfield "org.apache.poi.ss.usermodel.IndexedColors" (string color))))
 
