@@ -129,9 +129,28 @@
     :accessor cell-value
     :documentation "Text for the cell")))
 
+(setf *letter-lookup* (vector #\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K
+			      #\L #\M #\N #\O #\P #\Q #\R #\S #\T #\U #\V
+			      #\W #\X #\Y #\Z))
+
+(defun column-to-excel-convert (column)
+  (if (< column (length *letter-lookup*))
+      (cons (elt *letter-lookup* column) nil)
+      (let ((modulus (mod column (length *letter-lookup*)))
+	    (quotient (floor (/ column (length *letter-lookup*)))))
+	(cons (column-to-excel-convert (- quotient 1))
+	      (cons (elt *letter-lookup* modulus) nil)))))
+
+(defun flatten (l)
+  (cond ((null l) nil)
+        ((atom (car l)) (cons (car l) (flatten (cdr l))))
+        (t (append (flatten (car l)) (flatten (cdr l))))))
+
+(defun column-to-excel (column)
+  (concatenate 'string (flatten (column-to-excel-convert column))))
+
 (defun lookup-color (color)
   (java:jcall "getIndex" (java:jfield "org.apache.poi.ss.usermodel.IndexedColors" (string color))))
-
 
 (setf *cell-styles*
       '((bold . (lambda (style font cell) (java:jcall "setBold" font java:+true+)))
