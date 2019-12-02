@@ -1,7 +1,7 @@
 ((:name "a"
 	:rows '((:row-values '("name" "age"))
 		(:row-values '("mickey" 50))
-		(:row-values '("minnie" 48))
+		(:row-values '("minnie" 48 (:color 'green :cell-value "~a+~a" :formula '((-1 -1) (-1 0)))))
                 (:row-values  '((:custom 'goofy)))
                 (:row-values  '((:custom 'dopey)))
 		(:row-values '("goofy" 48 (:bold t :strikeout t :italic t :color 'red :cell-value "bogus")))

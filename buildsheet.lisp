@@ -118,6 +118,11 @@
     :initform nil
     :accessor right
     :documentation "Right border")
+   (formula
+    :initarg :formula
+    :initform nil
+    :accessor formula
+    :documentation "Specifies adjustments to the column and row parameters")
    (custom
     :initarg :custom
     :initform nil
@@ -172,14 +177,26 @@
 	1)
       0))
 
-(defun build-cell (workbook rownum cell)
+(defun build-formula (cell colnum rownum)
+  (let* ((cell-internal (slot-value cell 'cell-internal))
+	 (formula-format (slot-value cell 'cell-value))
+	 (adjustments
+	  (loop for adjustment in (slot-value cell 'formula)
+	       for adj = (excel-identifier (+ colnum (car adjustment)) (+ rownum (cadr adjustment)))
+	     collect adj)))
+    (java:jcall "setCellFormula" (slot-value cell 'cell-internal)
+		(apply #'format (cons nil (cons (slot-value cell 'cell-value) adjustments))))))
+
+(defun build-cell (workbook colnum rownum cell)
   (if (slot-value cell 'custom)
-	(build-cell workbook rownum (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons (slot-value cell 'cell-internal) (cdr (assoc (slot-value cell 'custom) *custom-cells*))))))))
+	(build-cell workbook colnum rownum (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons (slot-value cell 'cell-internal) (cdr (assoc (slot-value cell 'custom) *custom-cells*))))))))
 	(let* ((cell-internal (slot-value cell 'cell-internal))
 	       (style (java:jcall "createCellStyle" workbook))
 	       (font (java:jcall "createFont" workbook))
 	       (style-fn (lambda (style-name) (do-style style font cell style-name))))
-	  (java:jcall "setCellValue" cell-internal (slot-value cell 'cell-value))
+	  (if (slot-value cell 'formula)
+	      (build-formula cell colnum rownum)
+	      (java:jcall "setCellValue" cell-internal (slot-value cell 'cell-value)))
 	  (if (> (apply #'+ (loop for setting in '(bold italic strikeout bottom top left right color)
 		       for res = (funcall style-fn setting)
 		       collect res)) 0)
@@ -191,12 +208,12 @@
 	 (row-object (eval (cons 'make-instance (cons ''row (cons :row-internal (cons row-internal row)))))))
     (progn
       (loop for elt in (slot-value row-object 'row-values)
-	 for cellnum from 0
-	 do (let ((cell (java:jcall "createCell" row-internal cellnum)))
+	 for colnum from 0
+	 do (let ((cell (java:jcall "createCell" row-internal colnum)))
 	      (cond ((stringp elt) (java:jcall "setCellValue" cell elt))
 		    ((numberp elt) (java:jcall "setCellValue" cell elt))
 		    ((listp elt)
-		     (if elt (build-cell workbook rownum (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons cell elt)))))))))))
+		     (if elt (build-cell workbook colnum rownum (eval (cons 'make-instance (cons ''cell (cons :cell-internal (cons cell elt)))))))))))
       (if (slot-value row-object 'hidden) (java:jcall "setZeroHeight" row-internal t)))))
 
 (defun build-sheet (workbook sheet-ctor)
@@ -215,6 +232,7 @@
 		    for sheet = (build-sheet workbook sheet-ctor)
 		    collect sheet)))
     (progn
+      (java:jcall "setForceFormulaRecalculation" workbook java:+true+)
       (java:jcall "write" workbook file-output-stream)
       (java:jcall "close" file-output-stream))))
 
