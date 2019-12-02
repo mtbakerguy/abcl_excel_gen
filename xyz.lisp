@@ -1,6 +1,6 @@
 ((:name "a"
 	:rows '((:row-values '("name" "age"))
-		(:row-values '("mickey" 50))
+		(:row-values '("mickey" (:cell-value 50 :foreground 'orange)))
 		(:row-values '("minnie" 48 (:color 'green :cell-value "~a+~a" :formula '((-1 -1) (-1 0)))))
                 (:row-values  '((:custom 'goofy) 3 2 1 (:cell-value "SUM(~a:~a)":formula '((-3 0) (-1 0)))))
                 (:row-values  '((:custom 'dopey)))

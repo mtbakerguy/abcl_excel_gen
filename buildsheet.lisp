@@ -97,7 +97,12 @@
     :initarg :color
     :initform nil
     :accessor color
-    :documentation "Color for a cell")
+    :documentation "Color for text in a cell")
+   (foreground
+    :initarg :foreground
+    :initform nil
+    :accessor foreground
+    :documentation "Color for the cell foreground")
    (bottom
     :initarg :bottom
     :initform nil
@@ -168,7 +173,10 @@
 	(top . (lambda (style font cell) (java:jcall "setBorderTop" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM"))))
 	(left . (lambda (style font cell) (java:jcall "setBorderLeft" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM"))))
 	(right . (lambda (style font cell) (java:jcall "setBorderRight" style (java:jfield "org.apache.poi.ss.usermodel.BorderStyle" "MEDIUM"))))
-	(color . (lambda (style font cell) (java:jcall (java:jmethod "org.apache.poi.xssf.usermodel.XSSFFont" "setColor" (java:jclass "short")) font (lookup-color (slot-value cell 'color)))))))
+	(color . (lambda (style font cell) (java:jcall (java:jmethod "org.apache.poi.xssf.usermodel.XSSFFont" "setColor" (java:jclass "short")) font (lookup-color (slot-value cell 'color)))))
+	(foreground . (lambda (style font cell) (progn
+						  (java:jcall (java:jmethod "org.apache.poi.xssf.usermodel.XSSFCellStyle" "setFillForegroundColor" (java:jclass "short")) style (lookup-color (slot-value cell 'foreground)))
+						  (java:jcall "setFillPattern" style (java:jfield "org.apache.poi.ss.usermodel.FillPatternType" "SOLID_FOREGROUND")))))))
 
 (defun do-style (style font cell style-name)
   (if (slot-value cell style-name)
@@ -197,7 +205,7 @@
 	  (if (slot-value cell 'formula)
 	      (build-formula cell colnum rownum)
 	      (java:jcall "setCellValue" cell-internal (slot-value cell 'cell-value)))
-	  (if (> (apply #'+ (loop for setting in '(bold italic strikeout bottom top left right color)
+	  (if (> (apply #'+ (loop for setting in (loop for i in *cell-styles* for x = (car i) collect x)
 		       for res = (funcall style-fn setting)
 		       collect res)) 0)
 	      (progn (java:jcall "setFont" style font)
