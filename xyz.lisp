@@ -2,7 +2,7 @@
 	:rows '((:row-values '("name" "age"))
 		(:row-values '("mickey" 50))
 		(:row-values '("minnie" 48 (:color 'green :cell-value "~a+~a" :formula '((-1 -1) (-1 0)))))
-                (:row-values  '((:custom 'goofy)))
+                (:row-values  '((:custom 'goofy) 3 2 1 (:cell-value "SUM(~a:~a)":formula '((-3 0) (-1 0)))))
                 (:row-values  '((:custom 'dopey)))
 		(:row-values '("goofy" 48 (:bold t :strikeout t :italic t :color 'red :cell-value "bogus")))
 		(:row-values '("goofy" 48 (:bold t :strikeout t :italic t :color 'orange :cell-value "bogus")))
